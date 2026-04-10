@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Космический сборщик | Кликер-игра</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1225 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Orbitron', system-ui, -apple-system, 'Roboto', sans-serif;
+            padding: 16px;
+        }
+
+        /* Игровой контейнер */
+        .game-container {
+            max-width: 550px;
+            width: 100%;
+            background: rgba(10, 20, 40, 0.55);
+            backdrop-filter: blur(3px);
+            border-radius: 64px 64px 48px 48px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+            padding: 20px 20px 30px;
+            border: 1px solid rgba(72, 187, 255, 0.3);
+            transition: all 0.2s;
+        }
+
+        /* Шапка с ресурсами */
+        .stats-panel {
+            background: #030617cc;
+            border-radius: 48px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #2d4b8c;
+            box-shadow: 0 5px 12px black;
+        }
+
+        .stat {
+            background: #00000066;
+            border-radius: 40px;
+            padding: 6px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .stat span:first-child {
+            font-size: 1.3rem;
+        }
+
+        .stat .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #f5e56b;
+            text-shadow: 0 0 4px #ffb347;
+            font-family: monospace;
+        }
+
+        .energy-stat .value {
+            color: #6ef0ff;
+            text-shadow: 0 0 4px #00ccff;
+        }
+
+        /* Кнопка-ядро (клик) */
+        .click-area {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0 25px;
+        }
+
+        .core-button {
+            background: radial-gradient(circle at 30% 20%, #ffd966, #e68a2e);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5), 0 0 0 8px rgba(255,200,100,0.3), inset 0 -8px 0 rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.07s linear, box-shadow 0.1s;
+            text-align: center;
+            color: #2c1a0a;
+            font-weight: bold;
+            font-size: 1.9rem;
+            border: none;
+        }
+
+        .core-button:active {
+            transform: scale(0.96);
+            box-shadow: 0 8px 20px black, 0 0 0 5px rgba(255,220,100,0.6);
+        }
+
+        .core-button span:first-child {
+            font-size: 3.8rem;
+            line-height: 1;
+        }
+
+        .click-value {
+            background: #000000aa;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 1rem;
+            margin-top: 8px;
+            color: #ffec9f;
+        }
+
+        /* Секция улучшений */
+        .upgrades-section {
+            background: rgba(0, 5, 15, 0.7);
+            border-radius: 40px;
+            padding: 16px 12px;
+            margin: 18px 0;
+            backdrop-filter: blur(4px);
+            border: 1px solid #2a6f9f;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin: 0 8px 12px 8px;
+            color: #bbddff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 4px solid #ffaa44;
+            padding-left: 12px;
+        }
+
+        .upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .upgrade-card {
+            background: #07152be0;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px 8px 20px;
+            border: 1px solid #3f7fb0;
+            transition: 0.1s;
+        }
+
+        .upgrade-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #ffdd99;
+        }
+
+        .upgrade-desc {
+            font-size: 0.7rem;
+            color: #9bbce0;
+        }
+
+        .upgrade-cost {
+            font-family: monospace;
+            font-weight: bold;
+            background: #00000066;
+            padding: 4px 12px;
+            border-radius: 32px;
+            font-size: 1rem;
+            color: #f5cb5c;
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #3a6ea5, #1e3a5f);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.05s linear;
+            box-shadow: 0 2px 6px black;
+        }
+
+        .buy-btn:active {
+            transform: scale(0.96);
+            background: #2b5580;
+        }
+
+        .buy-btn.disabled {
+            opacity: 0.5;
+            transform: none;
+            pointer-events: none;
+            filter: grayscale(0.1);
+        }
+
+        /* Авто-кликер строка */
+        .auto-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            background: #041a2faa;
+            border-radius: 56px;
+            padding: 10px 20px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .auto-text {
+            color: #c3e2ff;
+            font-weight: bold;
+        }
+
+        .auto-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6effb0;
+            font-family: monospace;
+        }
+
+        /* эффекты всплывающих чисел */
+        .floating-number {
+            position: fixed;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 1.7rem;
+            color: #ffd966;
+            text-shadow: 0 0 5px orange;
+            z-index: 1000;
+            animation: floatUp 0.7s ease-out forwards;
+            font-family: monospace;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.2);
+            }
+        }
+
+        /* reset btn */
+        .reset-btn {
+            background: #2f1a2eaa;
+            border: 1px solid #ff8866;
+            color: #ffbc9a;
+            border-radius: 60px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.1s;
+            font-weight: bold;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 16px;
+            color: #7f8fa4;
+        }
+
+        @media (max-width: 480px) {
+            .core-button {
+                width: 160px;
+                height: 160px;
+                font-size: 1.4rem;
+            }
+            .stat .value {
+                font-size: 1.4rem;
+            }
+            .upgrade-card {
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+                border-radius: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container" id="gameRoot">
+    <div class="stats-panel">
+        <div class="stat">
+            <span>⭐</span>
+            <span class="value" id="resourceDisplay">0</span>
+        </div>
+        <div class="stat energy-stat">
+            <span>⚡</span>
+            <span class="value" id="energyDisplay">100</span>
+        </div>
+        <div class="stat">
+            <span>🖱️💪</span>
+            <span class="value" id="clickPowerDisplay">1</span>
+        </div>
+    </div>
+
+    <div class="click-area">
+        <div class="core-button" id="clickButton">
+            <span>🌌✨</span>
+            <span>СОБРАТЬ</span>
+            <div class="click-value" id="clickValueLabel">+1 звезда</div>
+        </div>
+    </div>
+
+    <div class="upgrades-section">
+        <div class="section-title">
+            🚀 Улучшения
+        </div>
+        <div class="upgrade-list" id="upgradesList"></div>
+        
+        <div class="auto-row">
+            <span class="auto-text">🤖 Авто-сборщик (в секунду):</span>
+            <span class="auto-value" id="autoPerSec">0</span>
+        </div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">🔄 Перезапустить галактику</button>
+    <footer>⚡ Энергия тратится за клик | восстанавливается 8 ед/сек | улучшения повышают мощь!</footer>
+</div>
+
+<script>
+    // ---------- ИГРОВАЯ ЛОГИКА: Космический сборщик ----------
+    // Ресурсы
+    let stars = 0;              // звёздная пыль / очки
+    let energy = 100;          // энергия, максимум 150
+    const MAX_ENERGY = 150;
+    let clickPower = 1;        // базовый доход за клик (потом множитель от улучшений)
+    
+    // Улучшения (магазин)
+    // каждое улучшение: id, name, description, basePrice, priceScale, effectType, effectValue, level (текущий уровень)
+    // effectType: "clickMult" (увеличивает множитель клика), "energyCap" (увеличивает макс энергию/восстановление), "autoGain" (добавляет авто-доход в секунду)
+    // для баланса: цена растёт по формуле: базовая * (1 + уровень * 0.6)
+    let upgrades = [
+        {
+            id: "focus_lens",
+            name: "🔭 Фокусирующая линза",
+            desc: "Мощь клика +2",
+            basePrice: 12,
+            priceScale: 1.5,
+            effectType: "clickMult",
+            effectValue: 2,
+            level: 0,
+            maxLevel: 20
+        },
+        {
+            id: "reactor_core",
+            name: "⚡ Реакторный кристалл",
+            desc: "+10 макс. энергии / +4 реген",
+            basePrice: 18,
+            priceScale: 1.6,
+            effectType: "energyCap",
+            effectValue: 10,
+            level: 0,
+            maxLevel: 12
+        },
+        {
+            id: "auto_drone",
+            name: "🤖 Дрон-сборщик",
+            desc: "+3 звёзд/сек авто",
+            basePrice: 25,
+            priceScale: 1.7,
+            effectType: "autoGain",
+            effectValue: 3,
+            level: 0,
+            maxLevel: 15
+        }
+    ];
+
+    // бонусные модификаторы (рассчитываются на основе уровней)
+    let bonusClickAdd = 0;      // дополнительный доход за клик (от линз)
+    let bonusAutoPerSec = 0;    // авто-доход в секунду (от дронов)
+    let bonusEnergyExtra = 0;    // доп. макс. энергии
+    let bonusRegenExtra = 0;     // доп. регенерация энергии (за реактор)
+
+    // Переменные для таймеров и флагов
+    let energyRegenInterval = null;
+    let autoGainInterval = null;
+    let lastTimestamp = 0;
+
+    // DOM элементы
+    const resourceSpan = document.getElementById("resourceDisplay");
+    const energySpan = document.getElementById("energyDisplay");
+    const clickPowerSpan = document.getElementById("clickPowerDisplay");
+    const clickValueLabel = document.getElementById("clickValueLabel");
+    const autoPerSecSpan = document.getElementById("autoPerSec");
+    const upgradesContainer = document.getElementById("upgradesList");
+    const clickBtn = document.getElementById("clickButton");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // Вспомогательная функция пересчета бонусов на основе уровней улучшений
+    function recalcBonuses() {
+        // обнуляем
+        bonusClickAdd = 0;
+        bonusAutoPerSec = 0;
+        bonusEnergyExtra = 0;
+        bonusRegenExtra = 0;
+
+        for (let up of upgrades) {
+            if (up.level <= 0) continue;
+            const totalEffect = up.effectValue * up.level;
+            if (up.effectType === "clickMult") {
+                bonusClickAdd = totalEffect;
+            } else if (up.effectType === "energyCap") {
+                // каждое очко эффекта даёт +1 к макс энергии и +0.4 реген/сек (округлим)
+                bonusEnergyExtra = totalEffect;
+                bonusRegenExtra = Math.floor(totalEffect * 0.4);
+            } else if (up.effectType === "autoGain") {
+                bonusAutoPerSec = totalEffect;
+            }
+        }
+        // обновляем отображение силы клика
+        const totalClickPower = clickPower + bonusClickAdd;
+        clickPowerSpan.innerText = totalClickPower;
+        const clickGain = totalClickPower;
+        clickValueLabel.innerText = `+${clickGain} ⭐`;
+        
+        // обновляем максимальную энергию (база 100 + бонус)
+        let newMax = MAX_ENERGY + bonusEnergyExtra;
+        if (energy > newMax) energy = newMax;
+        updateEnergyUI();
+        // авто-доход в сек
+        const totalAuto = bonusAutoPerSec;
+        autoPerSecSpan.innerText = totalAuto;
+        return totalClickPower;
+    }
+
+    // отрисовка списка улучшений
+    function renderUpgrades() {
+        upgradesContainer.innerHTML = "";
+        for (let i = 0; i < upgrades.length; i++) {
+            const up = upgrades[i];
+            const currentPrice = Math.floor(up.basePrice * Math.pow(up.priceScale, up.level));
+            const totalEffectNow = up.level * up.effectValue;
+            let effectText = "";
+            if (up.effectType === "clickMult") effectText = `+${totalEffectNow} к силе клика`;
+            else if (up.effectType === "energyCap") effectText = `+${totalEffectNow} макс. энергии / +${Math.floor(totalEffectNow*0.4)} реген`;
+            else if (up.effectType === "autoGain") effectText = `+${totalEffectNow} звёзд/сек`;
+            
+            const canAfford = stars >= currentPrice && up.level < up.maxLevel;
+            const levelText = up.level > 0 ? ` ур.${up.level}` : "";
+            const maxed = up.level >= up.maxLevel;
+            
+            const card = document.createElement("div");
+            card.className = "upgrade-card";
+            card.innerHTML = `
+                <div class="upgrade-info">
+                    <div class="upgrade-name">${up.name}${levelText}</div>
+                    <div class="upgrade-desc">${up.desc} (${effectText})</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <div class="upgrade-cost">💰 ${currentPrice}</div>
+                    <button class="buy-btn" data-id="${up.id}" ${maxed ? 'disabled style="opacity:0.5;"' : ''}>${maxed ? 'MAX' : 'Купить'}</button>
+                </div>
+            `;
+            upgradesContainer.appendChild(card);
+        }
+        
+        // вешаем события на кнопки (динамически)
+        document.querySelectorAll('.buy-btn').forEach(btn => {
+            if (btn.hasAttribute('data-id')) {
+                btn.removeEventListener('click', upgradeClickHandler);
+                btn.addEventListener('click', upgradeClickHandler);
+            }
+        });
+    }
+    
+    function upgradeClickHandler(e) {
+        const btn = e.currentTarget;
+        const upgradeId = btn.getAttribute('data-id');
+        const upgrade = upgrades.find(u => u.id === upgradeId);
+        if (!upgrade) return;
+        if (upgrade.level >= upgrade.maxLevel) return;
+        const price = Math.floor(upgrade.basePrice * Math.pow(upgrade.priceScale, upgrade.level));
+        if (stars >= price && energy > 0) { // тратим ресурсы, энергия не нужна для покупки но проверка звёзд
+            stars -= price;
+            upgrade.level++;
+            // после изменения уровня пересчитываем бонусы
+            recalcBonuses();
+            updateUI();
+            renderUpgrades();
+            // всплывающее сообщение о покупке
+            createFloatingText(`Куплено: ${upgrade.name}`, '#aaffdd', btn);
+        } else {
+            // эффект недостаточно звёзд
+            createFloatingText(`Не хватает ⭐!`, '#ffaa88', btn);
+        }
+    }
+
+    // Клик по сбору
+    function handleClick() {
+        // проверка энергии: клик стоит 1 энергии (если энергии нет - нельзя кликать)
+        if (energy < 1) {
+            createFloatingText(`Нет энергии! ⚡`, '#ff7777', clickBtn);
+            return;
+        }
+        const currentClickVal = clickPower + bonusClickAdd;
+        if (currentClickVal <= 0) return;
+        
+        // тратим энергию
+        energy = Math.max(0, energy - 1);
+        stars += currentClickVal;
+        
+        // анимация и обновление
+        updateUI();
+        createFloatingNumber(`+${currentClickVal}`, event);
+        createFloatingText(`✨ Сбор`, '#f9f2b0', clickBtn);
+        
+        // эффект искры
+        if (energy <= 5) {
+            createFloatingText(`⚠️ Энергия низкая!`, '#ffa07a', clickBtn);
+        }
+        recalcBonuses(); // обновить отображение силы (на случай синхронизации)
+    }
+    
+    // восстановление энергии (каждую секунду)
+    function regenEnergyTick() {
+        let regenAmount = 8 + bonusRegenExtra;   // база 8 + от реактора
+        let newEnergy = energy + regenAmount;
+        let maxEnergyVal = MAX_ENERGY + bonusEnergyExtra;
+        if (newEnergy > maxEnergyVal) newEnergy = maxEnergyVal;
+        energy = newEnergy;
+        updateEnergyUI();
+        if (energy > maxEnergyVal) energy = maxEnergyVal;
+    }
+    
+    // автоматический заработок звёзд в секунду (от дронов)
+    function autoGainTick() {
+        const autoStars = bonusAutoPerSec;
+        if (autoStars > 0) {
+            stars += autoStars;
+            updateResourceUI();
+            createFloatingText(`🤖 +${autoStars} авто`, '#90ffb0', document.querySelector('.auto-row'));
+        }
+    }
+    
+    // Обновление UI
+    function updateUI() {
+        updateResourceUI();
+        updateEnergyUI();
+        recalcBonuses(); // гарантирует актуальность силы клика и меток
+        renderUpgrades(); // перерисовываем цены (уровни изменились возможно)
+    }
+    
+    function updateResourceUI() {
+        resourceSpan.innerText = Math.floor(stars);
+    }
+    
+    function updateEnergyUI() {
+        const maxEnergyVal = MAX_ENERGY + bonusEnergyExtra;
+        energySpan.innerText = `${Math.floor(energy)}/${maxEnergyVal}`;
+        if (energy <= 10) {
+            energySpan.style.color = "#ffaa88";
+        } else {
+            energySpan.style.color = "#6ef0ff";
+        }
+    }
+    
+    // красивое всплывающее число (от клика)
+    function createFloatingNumber(text, clickEvent) {
+        let x, y;
+        if (clickEvent && clickEvent.clientX) {
+            x = clickEvent.clientX;
+            y = clickEvent.clientY;
+        } else {
+            const rect = clickBtn.getBoundingClientRect();
+            x = rect.left + rect.width/2;
+            y = rect.top + rect.height/2;
+        }
+        const div = document.createElement('div');
+        div.className = 'floating-number';
+        div.innerText = text;
+        div.style.left = x - 25 + 'px';
+        div.style.top = y - 20 + 'px';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 700);
+    }
+    
+    function createFloatingText(text, color, originElement) {
+        let rect;
+        if (originElement && originElement.getBoundingClientRect) {
+            rect = originElement.getBoundingClientRect();
+        } else {
+            rect = clickBtn.getBoundingClientRect();
+        }
+        const x = rect.left + rect.width/2;
+        const y = rect.top + rect.height/2 - 10;
+        const div = document.createElement('div');
+        div.className = 'floating-number';
+        div.innerText = text;
+        div.style.left = x - 40 + 'px';
+        div.style.top = y - 15 + 'px';
+        div.style.fontSize = '1rem';
+        div.style.color = color || '#ffd9a0';
+        div.style.textShadow = '0 0 3px black';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 600);
+    }
+    
+    // Сброс игры
+    function resetGame() {
+        stars = 0;
+        energy = 100;
+        clickPower = 1;
+        // сбросить уровни улучшений
+        for (let up of upgrades) {
+            up.level = 0;
+        }
+        bonusClickAdd = 0;
+        bonusAutoPerSec = 0;
+        bonusEnergyExtra = 0;
+        bonusRegenExtra = 0;
+        recalcBonuses();
+        updateUI();
+        renderUpgrades();
+        createFloatingText('🌀 Галактика перезапущена!', '#ffbb99', resetBtn);
+    }
+    
+    // Сохраняем прогресс в localStorage
+    function saveGame() {
+        const saveData = {
+            stars: stars,
+            energy: energy,
+            upgrades: upgrades.map(up => ({ id: up.id, level: up.level })),
+            clickPowerBase: clickPower
+        };
+        localStorage.setItem("spaceClickerSave", JSON.stringify(saveData));
+    }
+    
+    function loadGame() {
+        const raw = localStorage.getItem("spaceClickerSave");
+        if (!raw) return false;
+        try {
+            const data = JSON.parse(raw);
+            stars = data.stars || 0;
+            energy = data.energy;
+            if (energy > MAX_ENERGY) energy = MAX_ENERGY;
+            if (data.upgrades && Array.isArray(data.upgrades)) {
+                for (let saved of data.upgrades) {
+                    const targetUp = upgrades.find(u => u.id === saved.id);
+                    if (targetUp) {
+                        targetUp.level = Math.min(saved.level, targetUp.maxLevel);
+                    }
+                }
+            }
+            if (data.clickPowerBase) clickPower = data.clickPowerBase;
+            recalcBonuses();
+            updateUI();
+            renderUpgrades();
+            return true;
+        } catch(e) { console.warn(e); return false; }
+    }
+    
+    // интервалы и автосохранение
+    function startIntervals() {
+        if (energyRegenInterval) clearInterval(energyRegenInterval);
+        if (autoGainInterval) clearInterval(autoGainInterval);
+        energyRegenInterval = setInterval(() => {
+            regenEnergyTick();
+            updateEnergyUI();
+        }, 1000);
+        autoGainInterval = setInterval(() => {
+            autoGainTick();
+            updateResourceUI();
+        }, 1000);
+        // автосохранение каждые 15 сек
+        setInterval(() => {
+            saveGame();
+        }, 15000);
+    }
+    
+    // обработчики
+    function bindEvents() {
+        clickBtn.addEventListener('click', (e) => {
+            handleClick(e);
+            saveGame();
+        });
+        resetBtn.addEventListener('click', () => {
+            resetGame();
+            saveGame();
+        });
+    }
+    
+    // инициализация
+    function init() {
+        loadGame();       // загружаем сохранения
+        recalcBonuses();
+        updateUI();
+        renderUpgrades();
+        bindEvents();
+        startIntervals();
+        // небольшая заглушка: если энергия 0 то реген подтянет
+        if(energy < 1) energy = 5;
+        updateEnergyUI();
+    }
+    
+    init();
+</script>
+</body>
+</html>
